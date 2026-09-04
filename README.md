@@ -214,7 +214,11 @@ interactive prompt, so your project can configure it before importing.
 
 | File | Description |
 |------|-------------|
-| `engine/noorak_search.py` | Main CLI engine |
+| `engine/noorak_search.py` | Main CLI engine + injection guard + local search |
+| `engine/token_optimizer.py` | Token compression (compressed tools, context trimming) |
+| `engine/injection_guard.py` | Prompt injection detection & prevention |
+| `engine/local_search.py` | Project file indexer, search & structure analyzer |
+| `lfe/noor_pdna.py` | PDNA mathematical engine |
 | `lfe/noor_pdna.py` | PDNA mathematical engine |
 | `lfe/deepsearch.py` | Local search tool (stdlib) |
 | `lfe/test_noor_pdna.py` | PDNA unit tests |

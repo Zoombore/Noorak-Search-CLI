@@ -5,6 +5,31 @@ All notable changes to Noorak Search CLI will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.1.0] - 2026-09-04
+
+### Added
+- **Token Optimizer** (`engine/token_optimizer.py`):
+  - Compressed tool schemas (saves ~1500 tokens per turn after first)
+  - Context trimming for long conversations
+  - Token estimation utilities
+- **Injection Guard** (`engine/injection_guard.py`):
+  - 20+ injection pattern regex (ignore, forget, jailbreak, DAN, role confusion)
+  - Pre-processing sanitization
+  - Post-processing model response scanning
+  - Audit logging to `output/injection_audit.jsonl`
+- **Local Search** (`engine/local_search.py`):
+  - File indexer with word map (fast keyword search)
+  - Relevance ranking (TF-IDF-like scoring)
+  - Structure analyzer with opinion on file organization
+  - Reference finder across project
+  - 3 new tools: `local_search`, `analyze_structure`, `find_references`
+- 3 new TOOLS in `engine/noorak_search.py`: `local_search`, `analyze_structure`, `find_references`
+
+### Changed
+- `engine/noorak_search.py` — Added local search tools, injection guard integration
+- `README.md` — Updated with new engine files and capabilities
+- `CONTRIBUTING.md` — Added local search contribution guide section
+
 ## [2.0.0] - 2026-09-04
 
 ### Added
@@ -12,7 +37,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Cache system with TTL**: SHA-256 hashed cache for `web_search` and `fetch_page`
   - Configurable TTL via `NOORAK_CACHE_TTL` env var (default 24h)
   - Identical queries cost **0 tokens**, run in **<1ms**
-  - Benchmark: 0.001s cached vs 8.8s first run (8800× faster)
+  - Benchmark: 0.001s cached vs 8.8s first run (8800x faster)
 - **Save Guarantee (3-step ladder)**:
   1. Model calls `save_research` naturally
   2. Budget reached → forced `tool_choice={"name":"save_research"}`
@@ -29,7 +54,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **`docs/ARCHITECTURE.md`** — Full architecture guide
 - **`docs/HOW_IT_WORKS.md`** — Step-by-step flow documentation
 - **`docs/TUTORIAL.md`** — Quick start tutorial
-- **`CHANGELOG.md`** — This file
 - **Provider types**: OpenAI-compatible, Anthropic, Google Gemini
 - **3 research modes**: Light bobble, Light caster, RayCaster
 - **PDNA manifold engine** (lfe/noor_pdna.py)

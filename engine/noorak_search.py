@@ -219,35 +219,82 @@ def _chat_gemini(messages, max_tokens):
 
 # ---------- Tool definitions ----------
 TOOLS = [
-    {"type":"function","function":{
-        "name":"web_search",
-        "description":"Search the real internet (engines: bing, gh=GitHub, arxiv). Returns ranked results (title, URL, snippet).",
-        "parameters":{"type":"object","properties":{
-            "query":{"type":"string"},
-            "engines":{"type":"string","description":"comma list subset of ddg,bing,gh,arxiv (default bing,gh,arxiv)"},
-            "top":{"type":"integer","description":"how many results to return (default 8)"}
-        },"required":["query"]}}},
-    {"type":"function","function":{
-        "name":"fetch_page",
-        "description":"Fetch a single URL from the internet and return its cleaned text (title + body). Use after web_search to read a promising source in depth.",
-        "parameters":{"type":"object","properties":{"url":{"type":"string"}},"required":["url"]}}},
-    {"type":"function","function":{
-        "name":"save_research",
-        "description":"Write the COMPLETE final research document (Markdown) to disk. Call exactly once at the end.",
-        "parameters":{"type":"object","properties":{"markdown":{"type":"string"}},"required":["markdown"]}}},
-    {"type":"function","function":{
-        "name":"pdna",
-        "description":"NoorPDNA — Three-Dimensional Identity Manifold Engine. Compute psychological state values on a 3D sphere.",
-        "parameters":{"type":"object","properties":{
-            "action":{"type":"string","description":"base|changer|iterate|sphere|summary",
-                "enum":["base","changer","iterate","sphere","summary"]},
-            "y":{"type":"number","description":"Identity & Expression axis value [-1, +1]", "minimum":-1, "maximum":1},
-            "z":{"type":"number","description":"Sensory Processing axis value [-1, +1]", "minimum":-1, "maximum":1},
-            "x":{"type":"number","description":"Executive Control axis value [-1, +1]", "minimum":-1, "maximum":1},
-            "n":{"type":"integer","description":"Multiplier (for iterate)", "minimum":1, "default":5},
-            "resolution":{"type":"integer","description":"Sphere sampling resolution", "minimum":3, "maximum":10, "default":5},
-            "states":{"type":"array","description":"Array of state dicts (for summary)"}
-        },"required":["action"]}}},
+    {
+        "type": "function",
+        "function": {
+            "name": "web_search",
+            "description": "Search the real internet (engines: bing, gh=GitHub, arxiv). Returns ranked results (title, URL, snippet).",
+            "parameters": {"type": "object", "properties": {
+                "query": {"type": "string"},
+                "engines": {"type": "string", "description": "comma list subset of ddg,bing,gh,arxiv (default bing,gh,arxiv)"},
+                "top": {"type": "integer", "description": "how many results to return (default 8)"}
+            }, "required": ["query"]}
+        }
+    },
+    {
+        "type": "function",
+        "function": {
+            "name": "fetch_page",
+            "description": "Fetch a single URL from the internet and return its cleaned text (title + body). Use after web_search to read a promising source in depth.",
+            "parameters": {"type": "object", "properties": {"url": {"type": "string"}}, "required": ["url"]}
+        }
+    },
+    {
+        "type": "function",
+        "function": {
+            "name": "save_research",
+            "description": "Write the COMPLETE final research document (Markdown) to disk. Call exactly once at the end.",
+            "parameters": {"type": "object", "properties": {"markdown": {"type": "string"}}, "required": ["markdown"]}
+        }
+    },
+    {
+        "type": "function",
+        "function": {
+            "name": "pdna",
+            "description": "NoorPDNA — Three-Dimensional Identity Manifold Engine. Compute psychological state values on a 3D sphere.",
+            "parameters": {"type": "object", "properties": {
+                "action": {"type": "string", "description": "base|changer|iterate|sphere|summary", "enum": ["base","changer","iterate","sphere","summary"]},
+                "y": {"type": "number", "description": "Identity & Expression axis value [-1, +1]", "minimum": -1, "maximum": 1},
+                "z": {"type": "number", "description": "Sensory Processing axis value [-1, +1]", "minimum": -1, "maximum": 1},
+                "x": {"type": "number", "description": "Executive Control axis value [-1, +1]", "minimum": -1, "maximum": 1},
+                "n": {"type": "integer", "description": "Multiplier (for iterate)", "minimum": 1, "default": 5},
+                "resolution": {"type": "integer", "description": "Sphere sampling resolution", "minimum": 3, "maximum": 10, "default": 5},
+                "states": {"type": "array", "description": "Array of state dicts (for summary)"}
+            }, "required": ["action"]}
+        }
+    },
+    # --- New tools (added in v2.1) ---
+    {
+        "type": "function",
+        "function": {
+            "name": "local_search",
+            "description": "Search through PROJECT FILES by keyword. Returns ranked results with file paths and matching lines. Use to find code references, understand file organization, or locate specific functionality within Noorak.",
+            "parameters": {"type": "object", "properties": {
+                "query": {"type": "string", "description": "Search terms (minimum 3 chars)"},
+                "max_results": {"type": "integer", "description": "Max results (default 20)"},
+                "filter_ext": {"type": "string", "description": "Filter by extension (.py, .md, .txt)"}
+            }, "required": ["query"]}
+        }
+    },
+    {
+        "type": "function",
+        "function": {
+            "name": "analyze_structure",
+            "description": "Analyze the project structure. Returns file distribution, largest files, potential issues, and an OPINION on organization quality with suggestions for improvement.",
+            "parameters": {"type": "object", "properties": {}}
+        }
+    },
+    {
+        "type": "function",
+        "function": {
+            "name": "find_references",
+            "description": "Find all references to a function, class, or variable name across the project. Returns file paths and line numbers with context.",
+            "parameters": {"type": "object", "properties": {
+                "name": {"type": "string", "description": "Function/class/variable name to search for"},
+                "context_lines": {"type": "integer", "description": "Lines of context around each match (default 2)"}
+            }, "required": ["name"]}
+        }
+    }
 ]
 
 # ---------- Light Finder Engine (lfe/) imports ----------
@@ -258,6 +305,14 @@ def _import_lfe():
     return _ds, _pd
 
 DS, PDNA = _import_lfe()
+
+# ---------- Local Search (engine/local_search.py) ----------
+def _import_local_search():
+    sys.path.insert(0, str(ENGINE_DIR))
+    import local_search as _ls   # noqa
+    return _ls
+
+LS = _import_local_search()
 
 def run_deepsearch(args, cap_chars=8000):
     """Run our local deepsearch.py tool (stdlib only) and return captured stdout (truncated)."""
@@ -327,6 +382,20 @@ def exec_tool(name, args):
         return f"SAVED:{fname}"
     if name == "pdna":
         return _pdna_tool(args)
+    # --- Local Search tools ---
+    if name == "local_search":
+        return LS.execute_local_search(
+            args.get("query", ""),
+            max_results=args.get("max_results", 20),
+            filter_ext=args.get("filter_ext", "")
+        )
+    if name == "analyze_structure":
+        return LS.execute_analyze_structure()
+    if name == "find_references":
+        return LS.execute_find_references(
+            args.get("name", ""),
+            context_lines=args.get("context_lines", 2)
+        )
     return f"unknown tool: {name}"
 
 # ---------- NoorPDNA tool integration ----------
@@ -532,6 +601,10 @@ def pick_mode():
 
 def main():
     _ensure_provider()
+    # Load injection guard
+    import sys as _sys
+    _sys.path.insert(0, str(ENGINE_DIR))
+    import injection_guard as _ig
     while True:
         mode = pick_mode()
         cfg = MODES[mode]
