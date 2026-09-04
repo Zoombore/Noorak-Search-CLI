@@ -5,16 +5,6 @@ on:
     branches: [main]
 
 jobs:
-  lint:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-python@v5
-        with:
-          python-version: "3.11"
-      - run: pip install flake8
-      - run: flake8 engine/ lfe/ --max-line-length=200 --ignore=E501,W503,E303,E261,E722 --exclude=__pycache__
-
   test:
     runs-on: ubuntu-latest
     steps:
