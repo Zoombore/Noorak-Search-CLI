@@ -98,7 +98,16 @@ def _chat_openai(messages, tool_choice, max_tokens):
                                  headers=_openai_headers())
     resp = urllib.request.urlopen(req, timeout=120,
                                   context=ssl._create_unverified_context()).read()
-    return json.loads(resp)["choices"][0]["message"]
+    data = json.loads(resp)
+    msg = data["choices"][0]["message"]
+    # DeepSeek-V4 etc. may return reasoning_content; keep it available
+    reasoning = data.get("choices",[{}])[0].get("message",{}).get("reasoning_content","")
+    if reasoning:
+        msg["reasoning"] = reasoning
+    # Some models (DeepSeek) put text in reasoning instead of content
+    if not msg.get("content") and reasoning:
+        msg["content"] = reasoning
+    return msg
 
 def _chat_anthropic(messages, max_tokens):
     # Anthropic messages format: role "user" or "assistant" with content list
