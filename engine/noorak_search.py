@@ -1,35 +1,92 @@
 #!/usr/bin/env python3
 """
-Noorak Search CLI
+Noorak Search CLI — Engine v2.0
 
 A tool-capable model performs deep research by itself:
 it decides what to search, fetches pages, and writes a final Markdown report
 via tool-calling loops.
 
-Three modes:
+Layered project layout:
+  engine/   -> this orchestrator (loop, tool-calling, provider)
+  lfe/      -> Light Finder Engine (deepsearch.py, noor_pdna.py)
+  cache/    -> TTL cache for web_search / fetch_page results
+  storage/  -> raw corpus / downloaded pages
+  output/   -> final Markdown reports
+  docs/     -> how-it-works, tutorial, architecture
+
+Key guarantees:
+  - Cache: every web_search / fetch_page result is cached under cache/
+    for NOORAK_CACHE_TTL hours (default 24, set 0 to disable).
+    Identical queries cost 0 tokens and run instantly.
+  - Save is GUARANTEED. Fallback ladder:
+      1) model calls save_research (normal path)
+      2) budget reached -> forced tool_choice save_research
+      3) last resort -> AUTO-SAVE: report is built from the collected
+         evidence log and written to output/.
+    researcher_loop NEVER returns without a saved file (unless fatal error).
+  - All paths are DYNAMIC (relative to installation directory).
+    Nothing is hardcoded to any machine.
+
+Modes:
  - Light bobble  : baseline deep research (~4 tool calls)
- - Light caster  : two-phase plan, each phase gathers sources and writes a chunk (~8 tool calls)
- - RayCaster     : four-phase plan, each phase gathers sources and writes a chunk (~16 tool calls)
+ - Light caster  : two-phase plan with combined report (~8 tool calls)
+ - RayCaster     : four-phase plan with combined report (~16 tool calls)
 
-User picks mode, enters query, gets a Markdown report, then can:
- - run another search
- - view the last report
- - exit
-
-Provider is chosen interactively at launch — you enter base URL, API key, and model name.
-The CLI asks whether the endpoint is OpenAI-compatible, Anthropic, or Google Gemini
-and configures the request format accordingly.
-Nothing is hard-coded and no keys are written to disk.
-Non-interactive mode: set NOORAK_API_KEY, NOORAK_BASE_URL, NOORAK_MODEL env vars.
+Provider:
+ - Interactive prompt, or env vars:
+   NOORAK_API_KEY, NOORAK_BASE_URL, NOORAK_MODEL, NOORAK_API_TYPE
+ - No keys are ever written to disk.
 """
 
-import json, os, ssl, subprocess, sys, time, urllib.request, urllib.parse
+import json, os, ssl, subprocess, sys, time, hashlib, shutil, urllib.request, urllib.parse
 from pathlib import Path
 
-SCRIPT_DIR = Path(__file__).resolve().parent
+# ---------- Dynamic paths (installation-independent) ----------
+ENGINE_DIR = Path(__file__).resolve().parent        # .../engine
+ROOT_DIR = ENGINE_DIR.parent                        # repo root
+LFE_DIR = ROOT_DIR / "lfe"
+CACHE_DIR = ROOT_DIR / "cache"
+STORAGE_DIR = ROOT_DIR / "storage"
+CORPUS_DIR = STORAGE_DIR / "corpus"
+OUTPUT_DIR = ROOT_DIR / "output"
+for _d in (CACHE_DIR, STORAGE_DIR, CORPUS_DIR, OUTPUT_DIR):
+    _d.mkdir(parents=True, exist_ok=True)
+
+# ---------- Cache layer (TTL) ----------
+CACHE_TTL_HOURS = float(os.environ.get("NOORAK_CACHE_TTL", "24"))
+
+def _cache_path(kind: str, key: str) -> Path:
+    h = hashlib.sha256(key.encode("utf-8")).hexdigest()[:16]
+    return CACHE_DIR / f"{kind}_{h}.json"
+
+def cache_get(kind: str, key: str):
+    """Return cached value if fresh, else None. key is a stable string
+    (e.g. 'web_search|query|engines|top' or 'fetch_page|<url>')."""
+    if CACHE_TTL_HOURS <= 0:
+        return None
+    p = _cache_path(kind, key)
+    if not p.exists():
+        return None
+    try:
+        data = json.loads(p.read_text(encoding="utf-8"))
+        if time.time() - data["ts"] > CACHE_TTL_HOURS * 3600:
+            p.unlink(missing_ok=True)
+            return None
+        return data["value"]
+    except Exception:
+        return None
+
+def cache_set(kind: str, key: str, value) -> None:
+    if CACHE_TTL_HOURS <= 0:
+        return
+    try:
+        _cache_path(kind, key).write_text(
+            json.dumps({"ts": time.time(), "key": key, "value": value}, ensure_ascii=False),
+            encoding="utf-8")
+    except Exception:
+        pass
 
 # ---------- Provider selection (interactive) ----------
-
 def select_provider():
     """Ask the user for base URL, API key, model, and API type.
     Returns (api_key, base_url, model, api_type)."""
@@ -62,7 +119,6 @@ else:
     API_KEY, BASE_URL, MODEL, API_TYPE = select_provider()
 
 # ---------- API helpers ----------
-
 def _openai_headers():
     return {"Authorization": f"Bearer {API_KEY}", "Content-Type": "application/json"}
 
@@ -110,45 +166,16 @@ def _chat_openai(messages, tool_choice, max_tokens):
     return msg
 
 def _chat_anthropic(messages, max_tokens):
-    # Anthropic messages format: role "user" or "assistant" with content list
-    anthropic_messages = []
-    for m in messages:
-        role = m["role"]
-        content = m["content"]
-        if role == "tool":
-            # skip tool results in the first pass (not used by Anthropic directly)
-            continue
-        anthropic_messages.append({"role": role, "content": content})
-    # For tool use, Anthropic uses content blocks
-    body_messages = []
-    for m in messages:
-        if m["role"] == "system":
-            body_messages.append({"role": "user", "content": [{"type": "text", "text": m["content"]}]})
-        elif m["role"] == "user":
-            body_messages.append({"role": "m.user", "content": [{"type": "text", "text": m["content"]}]})
-        elif m["role"] == "assistant":
-            blocks = []
-            if isinstance(m["content"], str):
-                blocks.append({"type": "text", "text": m["content"]})
-            else:
-                for b in m["content"]:
-                    if b.get("type") == "tool_use":
-                        blocks.append({"type": "tool_use", "id": b["id"],
-                                       "name": b["function"]["name"],
-                                       "input": b["function"]["arguments"]})
-                    else:
-                        blocks.append({"type": "text", "text": str(b)})
-            body_messages.append({"role": "assistant", "content": blocks})
-        elif m["role"] == "tool":
-            # tool results as user message
-            pass
-    # Simple approach: send as user/assistant pairs, let model decide
+    # Simple approach: send flattened user/assistant pairs
     simple_msgs = []
     for m in messages:
         if m["role"] == "system":
             simple_msgs.append({"role": "user", "content": m["content"]})
         elif m["role"] == "assistant":
-            simple_msgs.append({"role": "assistant", "content": m["content"]})
+            c = m["content"]
+            if isinstance(c, list):
+                c = " ".join(str(b.get("text","")) for b in c if b.get("type")=="text")
+            simple_msgs.append({"role": "assistant", "content": c})
         elif m["role"] == "user":
             simple_msgs.append({"role": "user", "content": m["content"]})
     payload = json.dumps({
@@ -172,7 +199,7 @@ def _chat_anthropic(messages, max_tokens):
                 "id": block.get("id", ""),
                 "type": "function",
                 "function": {"name": block.get("name", ""),
-                             "arguments": json.dumps(block.get("input", {}))}
+                             "arguments": json.dumps(block.get("input", {}), ensure_ascii=False)}
             })
     return {"content": text, "tool_calls": tool_calls}
 
@@ -181,7 +208,6 @@ def _chat_gemini(messages, max_tokens):
     encoded_model = urllib.parse.quote(MODEL)
     url = f"{BASE_URL.rstrip('/')}/v1beta/models/{encoded_model}:generateContent"
     api_key_param = f"?key={API_KEY}"
-    # Convert messages to Gemini content format
     contents = []
     for m in messages:
         if m["role"] == "system":
@@ -240,67 +266,169 @@ TOOLS = [
         },"required":["action"]}}},
 ]
 
-# ---------- Local search engine (stdlib only) ----------
+# ---------- Light Finder Engine (lfe/) imports ----------
+def _import_lfe():
+    sys.path.insert(0, str(LFE_DIR))
+    import deepsearch as _ds   # noqa
+    import noor_pdna as _pd    # noqa
+    return _ds, _pd
+
+DS, PDNA = _import_lfe()
+
 def run_deepsearch(args, cap_chars=8000):
     """Run our local deepsearch.py tool (stdlib only) and return captured stdout (truncated)."""
-    p = subprocess.run([sys.executable, "deepsearch.py"] + args,
-                       cwd=SCRIPT_DIR, capture_output=True, text=True, timeout=120)
+    p = subprocess.run([sys.executable, str(LFE_DIR / "deepsearch.py")] + args,
+                       cwd=str(ROOT_DIR), capture_output=True, text=True, timeout=120)
     out = p.stdout
     if not out.strip():
         out = (p.stderr or "no output")[-4000:]
     return out[:cap_chars]
 
+# ---------- Direct fetch_page (bypass deepsearch.py for better results) ----------
+FETCH_UA = {
+    "User-Agent": "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
+    "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
+    "Accept-Language": "fa-IR,fa;q=0.9,en-US;q=0.8,en;q=0.7",
+    "Connection": "keep-alive",
+    "Upgrade-Insecure-Requests": "1",
+}
+
+def direct_fetch_page(url, timeout=25):
+    """Fetch a URL directly with realistic headers and return cleaned text."""
+    req = urllib.request.Request(url, headers=FETCH_UA)
+    with urllib.request.urlopen(req, timeout=timeout,
+                                 context=ssl._create_unverified_context()) as r:
+        raw = r.read().decode("utf-8", "replace")
+    # Use deepsearch.html_to_text for text extraction
+    text = DS.html_to_text(raw)
+    # Extract title
+    import re as _re, html as _html
+    m = _re.search(r"<title[^>]*>(.*?)</title>", raw, _re.S | _re.I)
+    title = _html.unescape(m.group(1)).strip() if m else url.split("/")[2]
+    return f"TITLE: {title}\nURL: {url}\nFETCHED: {time.strftime('%Y-%m-%d %H:%M:%S')}\n\n{text[:15000]}"
+
+# ---------- Tool execution (with cache) ----------
 def exec_tool(name, args):
     if name == "web_search":
-        q = args.get("query","")
+        q = args.get("query", "")
         eng = args.get("engines") or "bing,gh,arxiv"
         top = int(args.get("top") or 8)
-        return run_deepsearch([q,"--engines",eng,"--top",str(top)])
+        key = f"web_search|{q}|{eng}|{top}"
+        cached = cache_get("search", key)
+        if cached is not None:
+            return cached
+        res = run_deepsearch([q, "--engines", eng, "--top", str(top)])
+        cache_set("search", key, res)
+        return res
     if name == "fetch_page":
-        return run_deepsearch(["--url",args.get("url",""),"--name","_tool","--id","x"])
+        url = args.get("url", "")
+        if not url:
+            return "ERROR: no url provided."
+        key = f"fetch_page|{url}"
+        cached = cache_get("page", key)
+        if cached is not None:
+            return cached
+        res = direct_fetch_page(url)
+        cache_set("page", key, res)
+        return res
     if name == "save_research":
-        md = args.get("markdown","")
-        out_dir = SCRIPT_DIR / "output"
+        md = args.get("markdown", "")
+        if not md.strip():
+            return "ERROR: empty markdown, nothing saved."
+        out_dir = OUTPUT_DIR
         out_dir.mkdir(exist_ok=True)
         ts = time.strftime("%Y%m%d-%H%M%S")
         fname = out_dir / f"research_{ts}.md"
-        open(fname,"w",encoding="utf-8").write(md)
+        fname.write_text(md, encoding="utf-8")
         return f"SAVED:{fname}"
     if name == "pdna":
         return _pdna_tool(args)
-    return "unknown tool"
+    return f"unknown tool: {name}"
 
 # ---------- NoorPDNA tool integration ----------
 def _pdna_tool(args: dict) -> str:
-    """Handle pdna tool calls from the model. Lazy import."""
+    """Handle pdna tool calls from the model. Uses lfe/noor_pdna.py"""
     import noor_pdna
     action = args.get("action", "base")
     if action == "base":
         y = args.get("y", 0); z = args.get("z", 0); x = args.get("x", 0)
-        return json.dumps({"action": "base", "result": noor_pdna.pdna_base(y, z, x)})
+        return json.dumps({"action": "base", "result": noor_pdna.pdna_base(y, z, x)}, ensure_ascii=False)
     elif action == "changer":
         y = args.get("y", 0); z = args.get("z", 0); x = args.get("x", 0)
         results = noor_pdna.pdna_changer(y, z, x)
-        return json.dumps({"action": "changer", "results": results})
+        return json.dumps({"action": "changer", "results": results}, ensure_ascii=False)
     elif action == "iterate":
         y = args.get("y", 0); z = args.get("z", 0); x = args.get("x", 0)
         n = args.get("n", 5)
         results = noor_pdna.pdna_iterate(y, z, x, n)
-        return json.dumps({"action": "iterate", "results": results})
+        return json.dumps({"action": "iterate", "results": results}, ensure_ascii=False)
     elif action == "sphere":
         resolution = args.get("resolution", 5)
         results = noor_pdna.pdna_sphere_sample(resolution)
-        return json.dumps({"action": "sphere", "results": results})
+        return json.dumps({"action": "sphere", "results": results}, ensure_ascii=False)
     elif action == "summary":
         states = args.get("states", [])
-        return json.dumps({"action": "summary", "result": noor_pdna.pdna_summary(states)})
+        return json.dumps({"action": "summary", "result": noor_pdna.pdna_summary(states)}, ensure_ascii=False)
     return json.dumps({"error": f"unknown pdna action: {action}"})
 
-# ---------- Research loop ----------
+# ---------- Evidence log (for auto-save fallback) ----------
+class EvidenceLog:
+    """Collects every tool result during a run so a report can be built
+    even when the model never calls save_research."""
+    def __init__(self):
+        self.entries = []   # list of (tool_name, args_str, result)
+    def add(self, name, args, result):
+        self.entries.append((name, json.dumps(args, ensure_ascii=False)[:200], result))
+    def render_markdown(self, query):
+        lines = [
+            "# Auto-saved Research Report (evidence log)",
+            "",
+            f"**Query:** {query}",
+            f"**Date:** {time.strftime('%Y-%m-%d %H:%M:%S')}",
+            f"**Tool calls:** {len(self.entries)}",
+            "",
+            "> ⚠️ The model did not call `save_research`, so this report was",
+            "> auto-compiled by the engine from the collected search & fetch results.",
+            "",
+            "## Evidence",
+            "",
+        ]
+        for i, (name, args, result) in enumerate(self.entries, 1):
+            lines.append(f"### {i}. `{name}` {args}")
+            lines.append("")
+            lines.append("```")
+            lines.append(result[:6000])
+            lines.append("```")
+            lines.append("")
+        sources = []
+        for name, args, result in self.entries:
+            if name == "fetch_page":
+                try:
+                    a = json.loads(args)
+                    if a.get("url"): sources.append(a["url"])
+                except Exception: pass
+        if sources:
+            lines.append("## Sources")
+            lines.append("")
+            for s in dict.fromkeys(sources):
+                lines.append(f"- {s}")
+            lines.append("")
+        return "\n".join(lines)
+
+def auto_save_report(query, evidence: EvidenceLog) -> str:
+    """Last-resort save: build a report from the evidence log and write it."""
+    ts = time.strftime("%Y%m%d-%H%M%S")
+    fname = OUTPUT_DIR / f"research_{ts}_auto.md"
+    fname.write_text(evidence.render_markdown(query), encoding="utf-8")
+    return str(fname)
+
+# ---------- Research loop (save GUARANTEED) ----------
 def researcher_loop(query, system_extra="", max_tool_calls=4):
-    """Run the model with tool use. Let the model call tools naturally; we only nudge
-    it via user messages and enforce a tool-call budget. No hard tool_choice forcing
-    except as a last-resort fallback if nothing was produced."""
+    """Run the model with tool use. Save is guaranteed via a 3-step ladder:
+       1) model calls save_research naturally
+       2) budget reached -> forced tool_choice=save_research
+       3) auto-save from evidence log (never returns None for a real run)
+    """
     sys_prompt = (
         "You are the Deep-Research sub-agent. "
         "You have REAL internet search tools: web_search (discover sources) and fetch_page (read a page). "
@@ -309,10 +437,11 @@ def researcher_loop(query, system_extra="", max_tool_calls=4):
         "2) Use fetch_page on the most promising URLs to read them in depth. "
         "3) Ground every claim in a fetched source; cite URL inline. Mark [Personal Analysis] only when truly needed. "
         "4) When you have gathered enough material, call save_research ONCE with the complete Markdown "
-        "document (Executive Summary, findings, architecture with Mermaid if needed, roadmap, decision matrix, "
-        "risks, next steps, and a Sources appendix of all URLs you used). "
+        "document (Executive Summary, findings, analysis, risks, next steps, and a Sources appendix of all URLs you used). "
         "5) You have a BUDGET of " + str(max_tool_calls) + " tool calls. Keep searching until you reach that budget "
         "or have enough sources, then call save_research. Do not stop early. "
+        "6) MANDATORY: you MUST end your research by calling save_research. A run that never calls "
+        "save_research is a FAILED run."
         "Be concrete and pragmatic."
     )
     if system_extra:
@@ -324,8 +453,8 @@ def researcher_loop(query, system_extra="", max_tool_calls=4):
     ]
 
     tool_count = 0
-    saved_path = None
     safety = max_tool_calls * 3 + 6
+    evidence = EvidenceLog()
 
     for _ in range(safety):
         msg = chat(messages, max_tokens=1800)
@@ -347,6 +476,7 @@ def researcher_loop(query, system_extra="", max_tool_calls=4):
                 try: args = json.loads(fn.get("arguments") or "{}")
                 except Exception: args = {}
                 res = exec_tool(name, args)
+                evidence.add(name, args, res)
                 messages.append({"role":"tool","tool_call_id":t["id"],"content":res[:16000]})
                 if name == "save_research" and res.startswith("SAVED:"):
                     return res.split(":",1)[1]
@@ -354,7 +484,7 @@ def researcher_loop(query, system_extra="", max_tool_calls=4):
             if tool_count >= max_tool_calls:
                 messages.append({"role":"user","content":
                     f"You have reached your tool-call budget ({tool_count}/{max_tool_calls}). "
-                    "Stop searching now. Finalize by calling save_research with the complete report."})
+                    "Stop searching now. Call save_research ONCE with the complete final Markdown report."})
             continue
 
         else:
@@ -363,37 +493,30 @@ def researcher_loop(query, system_extra="", max_tool_calls=4):
                     f"You have not finished researching. Tool calls used: {tool_count}/{max_tool_calls}. "
                     "Continue by calling web_search or fetch_page to gather more sources."})
             else:
+                # ---- Fallback ladder: force the save ----
                 messages.append({"role":"user","content":
                     "Tool budget reached. Call save_research now with the final Markdown report."})
-                msg2 = chat(messages, max_tokens=3000)
-                tcs2 = msg2.get("tool_calls") or []
-                if tcs2:
-                    for t in tcs2:
+                try:
+                    msg2 = chat(messages, tool_choice={"type":"function","function":{"name":"save_research"}},
+                                max_tokens=6000)
+                    for t in (msg2.get("tool_calls") or []):
                         fn = t["function"]; name = fn["name"]
                         try: args = json.loads(fn.get("arguments") or "{}")
                         except Exception: args = {}
                         res = exec_tool(name, args)
                         if name == "save_research" and res.startswith("SAVED:"):
                             return res.split(":",1)[1]
-                last_text = msg2.get("content") or assistant.get("content") or ""
-                if last_text.strip():
-                    out_dir = SCRIPT_DIR / "output"
-                    out_dir.mkdir(exist_ok=True)
-                    ts = time.strftime("%Y%m%d-%H%M%S")
-                    fname = out_dir / f"research_{ts}.md"
-                    open(fname,"w",encoding="utf-8").write(last_text)
-                    return str(fname)
-                msg3 = chat(messages, tool_choice={"type":"function","function":{"name":"save_research"}}, max_tokens=3000)
-                for t in (msg3.get("tool_calls") or []):
-                    fn = t["function"]; name = fn["name"]
-                    try: args = json.loads(fn.get("arguments") or "{}")
-                    except Exception: args = {}
-                    res = exec_tool(name, args)
-                    if name == "save_research" and res.startswith("SAVED:"):
-                        return res.split(":",1)[1]
-                return None
+                    last_text = msg2.get("content") or assistant.get("content") or ""
+                    if last_text.strip():
+                        out = OUTPUT_DIR / f"research_{time.strftime('%Y%m%d-%H%M%S')}_final.md"
+                        out.write_text(last_text, encoding="utf-8")
+                        return str(out)
+                except Exception as e:
+                    print(f"[Noorak] forced-save attempt failed: {e}")
+                # ---- Last resort: auto-save from evidence ----
+                return auto_save_report(query, evidence)
 
-    return saved_path
+    return auto_save_report(query, evidence)
 
 # ---------- Modes ----------
 MODES = {
@@ -412,7 +535,9 @@ MODES = {
 }
 
 def pick_mode():
-    print('\n=== Noorak Search CLI ===')
+    print('\n=== Noorak Search CLI v2.0 ===')
+    print(f'    cache: {CACHE_DIR} (TTL {CACHE_TTL_HOURS}h)')
+    print(f'    output: {OUTPUT_DIR}')
     for key, val in MODES.items():
         print(' %s) %s - %s' % (key, val['name'], val['desc']))
     while True:
@@ -457,10 +582,7 @@ def main():
                 else:
                     print("Invalid option.")
         else:
-            print("⚠️ Research did not produce a saved report (maybe hit iteration limit).")
-            again = input("Try again with same query? (y/n): ").strip().lower()
-            if again != "y":
-                continue
+            print("⚠️ Research did not produce a saved report (unexpected error).")
 
 if __name__ == "__main__":
     try:

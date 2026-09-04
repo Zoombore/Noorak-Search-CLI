@@ -1,0 +1,786 @@
+URL: https://coinmarketcap.com/currencies/tether/
+TITLE: Tether price today, USDT to USD live price, marketcap and chart | CoinMarketCap
+FETCHED: 2026-09-04 12:22:16
+
+Tether price today, USDT to USD live price, marketcap and chart | CoinMarketCap
+
+Markets
+
+Cryptocurrencies
+
+RankingCategoriesHistorical SnapshotsToken unlocksYieldReal-World Assets
+
+Leaderboards
+
+TrendingUpcomingRecently AddedGainers & LosersMost VisitedCommunity Sentiment
+
+Prediction Markets
+
+TrendingNew CryptoPoliticsSportsFinanceTech
+
+NFT
+
+Overall NFT StatsUpcoming Sales
+
+Dashboards
+
+Markets
+
+Market OverviewSpot MarketNo. of CryptocurrenciesChain RankingNewBitcoin TreasuriesBNB TreasuriesExchange Inflows/Outflows
+
+Indicators
+
+Fear and Greed IndexAltcoin Season IndexMarket Cycle IndicatorsBitcoin DominanceCoinMarketCap 20 IndexCoinMarketCap 100 Index
+
+ETF Flows
+
+Crypto ETFsBitcoin ETFsEthereum ETFs
+
+Technical analysis
+
+RSIMACD
+
+Derivatives
+
+OverviewLiquidationsFunding Rates
+
+DexScan
+
+SignalsNewTrendingNewGainersMeme ExplorerTop Traders
+
+Exchanges
+
+Centralized Exchanges
+
+SpotDerivatives
+
+Decentralized Exchanges
+
+SpotDerivatives
+
+Community
+
+FeedsTopicsLivesArticles
+
+API
+
+API
+
+Crypto APIDEX APIEnterpriseCase StudiesPricingResourcesDocumentationFAQ
+
+AI Integrations
+
+CMC Agent HubSkills MarketplaceCMC MCPx402
+
+Products
+
+Products
+
+ConverterNewsletterCMC LaunchCMC LabsCMC MaxTop StoriesTelegram BotAdvertiseSite Widgets
+
+Learn
+
+NewsAcademyResearchVideosGlossary
+
+CMC AI
+
+Ask CMC AIAI Alerts
+
+Campaigns
+
+AirdropsDiamond RewardsLearn & Earn
+
+Calendars
+
+ICO CalendarEvents Calendar
+
+Tether price
+USDT
+
+#3
+
+1M
+
+$0.9999  
+
+0.04% (24h)
+
+Tether USDt to USD Chart
+
+Loading Data
+
+Please wait, we are loading chart data
+
+Tether statistics
+
+Market cap
+
+$183.36B
+
+0.02%
+
+Volume (24h)
+
+$93.25B
+
+56.79%
+
+Vol/Mkt Cap (24h)
+
+50.85%
+
+FDV
+
+$189.32B
+
+Total supply
+
+189.33B USDT
+
+Max. supply
+
+∞
+
+Circulating supply
+
+183.38B USDT
+
+Website
+
+Website
+
+Whitepaper
+
+Socials
+
+Contracts
+
+0xdac1...831ec7
+
+Rating (CertiK)
+
+4.7
+
+Audits
+
+Explorers
+
+www.omniexplorer.info
+
+Wallets
+
+UCID
+
+825
+
+USDT to USD converter
+
+USDT
+
+USD
+
+Price performance
+24h 
+
+Low
+$0.9994
+
+High
+$1.00
+
+All-time high
+Feb 25, 2015 (12y ago)
+
+$1.22
+-17.73%
+
+All-time low
+Mar 02, 2015 (12y ago)
+
+$0.5683
++75.95%
+
+See historical data
+
+Tags
+
+StablecoinFiat StablecoinWorld Liberty Financial PortfolioShow all
+
+More information
+
+Do you own this project?
+ Update Token Info Submit Token Unlocks Claim Community Badge
+
+DEX Mode
+
+Loading Data
+
+Please wait, we are loading chart data
+
+Tether Markets
+
+All
+
+All
+
+CEX
+
+CEX
+
+DEX
+
+DEX
+
+Spot
+
+Spot
+
+Perpetual
+
+Perpetual
+
+Futures
+
+Futures
+
+Filters 
+
+Loading data...
+
+Show full width
+
+Disclaimer: This page may contain affiliate links. CoinMarketCap may be compensated if you visit any affiliate links and you take certain actions such as signing up and transacting with these affiliate platforms. Please refer to Affiliate Disclosure
+
+Tether News
+
+Top
+
+Top
+
+Latest
+
+Latest
+
+CMC Daily Analysis
+
+Tether community
+
+Tether USDt Yield
+
+Loading...
+
+About Tether
+
+What Is Tether (USDT)?
+
+Launched in 2014, Tether is a blockchain-enabled platform designed to facilitate the use of fiat currencies in a digital manner. Tether works to disrupt the conventional financial system via a more modern approach to money. Tether has made headway by giving customers the ability to transact with traditional currencies across the blockchain, without the inherent volatility and complexity typically associated with a digital currency. As the first blockchain-enabled platform to facilitate the digital use of traditional currencies (a familiar, stable accounting unit), Tether has democratised cross-border transactions across the blockchain.
+
+What is the Tether USD₮ token?
+
+USD₮ is a digital dollar, powered by blockchain technology, a stablecoin that is pegged 1:1 to the USD.
+
+USD₮ provides individuals and organizations with a robust and decentralized method of exchanging value while using a familiar accounting unit.
+
+How do Tether tokens work?
+
+Tether tokens exist as digital tokens built on several leading blockchains, including Algorand, Avalanche, Bitcoin Cash’s Simple Ledger Protocol (SLP), Ethereum, EOS, Liquid Network, Omni, Polygon, Tezos, Tron, Solana, Kava and Statemine. These transport protocols consist of open source software that interface with blockchains to allow for the issuance and redemption of Tether tokens. Every Tether token is 100% backed by Tether's reserves. As a fully transparent company, Tether publishes a record of the current reserve assets.
+
+Who Are The Founders Of Tether?
+
+USDT — or as it was known at the time, Realcoin — was launched in 2014 by Brock Pierce, Reeve Collins and Craig Sellars.
+
+Brock Pierce is a well-known entrepreneur who has co-founded a number of high-profile projects in the crypto and entertainment industries. In 2013, he co-founded a venture capital firm Blockchain Capital, which by 2017 had raised over $80 million in funding. In 2014, Pierce became the director of the Bitcoin Foundation, a nonprofit established to help improve and promote Bitcoin. Pierce has also co-founded Block.one, the company behind EOS, one of the largest cryptocurrencies on the market.
+
+Reeve Collins was the CEO of Tether for the first two years of its existence. Prior to that, he had co-founded several successful companies, such as the online ad network Traffic Marketplace, entertainment studio RedLever and gambling website Pala Interactive. As of 2020, Collins is heading SmarMedia Technologies, a marketing and advertising tech company.
+
+Other than working on Tether, Craig Sellars has been a member of the Omni Foundation for over six years. Its Omni Protocol allows users to create and trade smart-contract based properties and currencies on top of Bitcoin’s blockchain. Sellars has also worked in several other cryptocurrency companies and organizations, such as Bitfinex, Factom, Synereo and the MaidSafe Foundation.
+
+What Makes Tether Unique?
+
+USDT’s unique feature is the fact that its value is guaranteed by Tether to remain pegged to the U.S. dollar. According to Tether, whenever it issues new USDT tokens, it allocates the same amount of USD to its reserves, thus ensuring that USDT is fully backed by cash and cash equivalents.
+
+The famously high volatility of the crypto markets means that cryptocurrencies can rise or fall by 10-20% within a single day, making them unreliable as a store of value. USDT, on the other hand, is protected from these fluctuations.
+
+This property makes USDT a safe haven for crypto investors: during periods of high volatility, they can park their portfolios in Tether without having to completely cash out into USD. In addition, USDT provides a simple way to transact a U.S. dollar equivalent between regions, countries and even continents via blockchain — without having to rely on a slow and expensive intermediary, like a bank or a financial services provider.
+
+However, over the years, there have been a number of controversies regarding the validity of Tether’s claims about their USD reserves, at times disrupting USDT’s price, which went down as low as $0.88 at one point in its history. Many have raised concerns about the fact that Tether’s reserves have never been fully audited by an independent third party.
+
+Is Tether Entering the Social Media Market?
+
+In July 2022, Tether, alongside peer-to-peer data network Hypercore and its sister company Bitfinex, collaborated on a social media app called Keet.
+
+The fully encrypted video chat application is currently a desktop-only app for now, but there are plans to extend the product to mobile devices soon.
+
+Keet app is the first app to be deployed on Holepunch, a platform that allows developers to build Web3 apps. And although Keet is still a closed-source project, the companies plan to make it open-source by the end of the year.
+
+Commenting on why Tether was launching a chat app, Ardoino, who doubles as the chief strategy officer at Holepunch, simply said “freedom of speech.”
+
+How Many Tether (USDT) Coins Are There In Circulation?
+
+There is no hard-coded limit on the total supply of USDT — given the fact that it belongs to a private company, theoretically, its issuance is limited only by Tether’s own policies. However, because Tether claims that every single USDT is supposed to be backed by one U.S. dollar, the amount of tokens is limited by the company’s actual cash reserves.
+
+Moreover, Tether does not disclose its issuance schedules ahead of time. Instead, they provide daily transparency reports, listing the total amount of their asset reserves and liabilities, the latter corresponding to the amount of USDT in circulation.
+
+As of September 2020, there are over 14.4 billion USDT tokens in circulation, which are backed by $14.6 billion in assets, according to Tether.
+
+How Is the Tether Network Secured?
+
+USDT does not have its own blockchain — instead, it operates as a second-layer token on top of other cryptocurrencies’ blockchains: Bitcoin, Ethereum, EOS, Tron, Algorand, Bitcoin Cash and OMG, and is secured by their respective hashing algorithms.
+
+Where Can You Buy Tether (USDT)?
+
+It is possible to buy Tether / USDT on a large number of cryptocurrency exchanges. In fact, USDT’s average daily trading volume is often on par or even exceeds that of Bitcoin. It is especially prominent on those exchanges where fiat-to-crypto trading pairs are unavailable, as it provides a viable alternative to USD. Here are some of the most popular exchanges that support Tether trading:
+
+Binance
+
+OKEx
+
+HitBTC
+
+Huobi Global
+
+Tether Enters the Latin American Market
+
+In May 2022, Tether announced the launch of MXNT, a new stablecoin backed by the Mexican peso. The move marked its expansion into the Latin American market following earlier debuts of its USDT, EURT and CNHT stablecoins, pegged to the U.S. dollar, euro and Chinese yuan, respectively.
+
+Upon launch, MXNT will be available on three major blockchains: Ethereum, Polygon and Tron.
+
+According to the firm’s CTO, Paolo Ardoino, the decision to expand into Latin America was fueled by an increase in cryptocurrency usage in the region. Notably, a report from cryptocurrency payments company Triple A revealed that 40% of Mexican companies were interested in adopting cryptocurrencies in one form or the other, with 71% within the segment specifically focused on cryptocurrency usage.
+
+Tether named Mexico a “prime location” for the next Latin American crypto hub. The plan is to onboard as many new users within the Latin American market, and use the launch of MXNT as a testing ground for future fiat-pegged currencies in the region.
+
+Related Pages:
+
+Looking for market and blockchain data for BTC? Visit our block explorer.
+
+Want to buy crypto? Use CoinMarketCap’s guide.
+
+Related Articles
+
+Mantle Joins Global Dollar Network, Adds Paxos Stablecoin USDG Natively
+
+21 Major Banks Plan Stablecoin Venture With Dollar Token Launch in 2027
+
+ECB Touts Digital Euro Privacy as Revolut Launches Euro Stablecoin EURR, Forbes
+
+IMF Warns Stablecoins Risk Monetary Sovereignty in Emerging Markets
+
+Visa, Dunamu Team Up To Explore Stablecoin Payments and AI Commerce
+
+Related CMC AI Articles
+
+What is Tether USDt (USDT)?
+
+Latest Tether USDt (USDT) Price Analysis
+
+Tether USDt (USDT) Price Prediction
+
+Latest Tether USDt (USDT) News Update
+
+Similar Coins to Tether USDt
+
+Popular Real World Assets
+
+Gold
+
+GOLD
+
+$4,467.59
+
+0.00%
+
+Nvidia Corp
+
+NVDA
+
+$231.82
+
+1.48%
+
+Apple Inc.
+
+AAPL
+
+$326.3
+
+0.58%
+
+Alphabet Inc Class A
+
+GOOGL
+
+$342.42
+
+0.02%
+
+Microsoft Corp
+
+MSFT
+
+$507.79
+
+0.46%
+
+Silver
+
+SILVER
+
+$66.9
+
+0.05%
+
+Amazon.com Inc
+
+AMZN
+
+$259.9
+
+0.39%
+
+Taiwan Semiconductor Manufacturing Co Ltd
+
+TSM
+
+$421.4
+
+1.05%
+
+SpaceX
+
+SPCX
+
+$149.5
+
+0.16%
+
+Broadcom Inc
+
+AVGO
+
+$360
+
+0.80%
+
+Meta Platforms, Inc.
+
+META
+
+$610.5
+
+0.03%
+
+Tesla, Inc.
+
+TSLA
+
+$365.16
+
+2.98%
+
+SK Hynix
+
+SKHY
+
+$166.1
+
+1.48%
+
+Micron Technology Inc
+
+MU
+
+$975.83
+
+1.84%
+
+Berkshire Hathaway Inc Class B
+
+BRK.B
+
+$506.12
+
+0.40%
+
+Eli Lilly And Co
+
+LLY
+
+$1,153.98
+
+0.48%
+
+JPmorgan Chase & Co
+
+JPM
+
+$361.25
+
+0.22%
+
+Walmart Inc
+
+WMT
+
+$108.46
+
+0.04%
+
+Most Visited Cryptocurrencies
+
+Chump Coin
+CHUMP
+
+$0.033048.81%
+Bitcoin
+BTC
+
+$81,241.244.08%
+XRP
+XRP
+
+$1.455.84%
+Ethereum
+ETH
+
+$2,522.724.78%
+Zcash
+ZEC
+
+$1,009.0119.45%
+Solana
+SOL
+
+$104.033.12%
+Pi
+PI
+
+$0.095891.41%
+Hyperliquid
+HYPE
+
+$86.996.08%
+Cardano
+ADA
+
+$0.22136.68%
+Chainlink
+LINK
+
+$12.046.67%
+Arbitrum
+ARB
+
+$0.13391.80%
+Uniswap
+UNI
+
+$6.372.64%
+Sui
+SUI
+
+$0.77721.27%
+Dogecoin
+DOGE
+
+$0.087875.57%
+Pons
+PONS
+
+$0.729136.25%
+Kaspa
+KAS
+
+$0.03033.80%
+Shiba Inu
+SHIB
+
+$0.0000053362.32%
+Pepe
+PEPE
+
+$0.0000036875.82%
+Hedera
+HBAR
+
+$0.079062.81%
+Useless Coin
+USELESS
+
+$0.255363.82%
+
+Global Tether USDt Prices
+
+USDT/EUR
+Euro
+
+€0.8603
+USDT/GBP
+Pound Sterling
+
+£0.7389
+USDT/CNY
+Chinese Yuan
+
+¥6.71
+USDT/CAD
+Canadian Dollar
+
+$1.38
+USDT/AUD
+Australian Dollar
+
+$1.39
+USDT/JPY
+Japanese Yen
+
+¥156.18
+USDT/KRW
+South Korean Won
+
+₩1,349.33
+USDT/RUB
+Russian Ruble
+
+₽86.55
+USDT/INR
+Indian Rupee
+
+₹94.47
+USDT/BRL
+Brazilian Real
+
+R$5.11
+USDT/TRY
+Turkish Lira
+
+₺48.44
+USDT/PHP
+Philippine Peso
+
+₱62.63
+USDT/PKR
+Pakistani Rupee
+
+₨277.30
+USDT/USDT
+Tether USDT
+
+1.0000 USDT
+
+Trending
+
+Dash$53.56
+
+24.43%
+
+Useless Coin$0.2554
+
+62.42%
+
+Onyxcoin$0.00409
+
+25.82%
+
+Bitcoin$81,192.02
+
+3.99%
+
+Tria$0.005037
+
+34.27%
+
+Tether Price Live Data
+
+The live Tether price today is $0.999934 USD with a 24-hour trading volume of $93,250,784,988 USD. We update our USDT to USD price in real-time. Tether is up 0.03% in the last 24 hours. The current CoinMarketCap ranking is #3, with a live market cap of $183,368,551,236 USD. It has a circulating supply of 183,380,584,914 USDT coins and the max. supply is not available.
+
+CoinMarketCap
+
+Tokens
+
+Tether
+
+Products
+
+Academy
+
+Advertise
+
+CMC Labs
+
+CMC Max
+
+Top Stories
+
+CMC Updates
+
+Bitcoin ETFs
+
+Crypto API
+
+DexScan
+
+Real-World Assets
+
+Global Charts
+
+NFTs
+
+Portfolio
+
+Watchlist
+
+Doodles
+
+Sitemap
+
+Company
+
+About us
+
+Terms of use
+
+Privacy Policy
+
+Cookie preferences
+
+Cookie policy
+
+Community Rules
+
+Disclaimer
+
+Methodology
+
+Security
+
+CareersWe’re hiring!
+
+Support
+
+Get listed
+
+Request Form
+
+Contact Support
+
+FAQ
+
+Glossary
+
+Socials
+
+X (Twitter)
+
+Community
+
+Telegram
+
+Instagram
+
+Facebook
+
+Reddit
+
+LinkedIn
+
+© 2026 CoinMarketCap. All rights reserved

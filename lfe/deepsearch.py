@@ -19,8 +19,25 @@ Engines:
 import argparse, html, io, os, re, ssl, sys, time, urllib.parse, urllib.request
 import xml.etree.ElementTree as ET
 from html.parser import HTMLParser
+from pathlib import Path
 
-UA = {"User-Agent": "Mozilla/5.0 (X11; Linux x86_64) Mozilla-DS/1.0 research-bot"}
+# Dynamic paths: corpus lives under <repo>/storage/corpus
+SCRIPT_DIR = Path(__file__).resolve().parent          # .../lfe
+ROOT_DIR = SCRIPT_DIR.parent                          # repo root
+CORPUS_DIR = ROOT_DIR / "storage" / "corpus"
+
+UA = {
+    "User-Agent": "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
+    "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
+    "Accept-Language": "fa-IR,fa;q=0.9,en-US;q=0.8,en;q=0.7",
+    "Accept-Encoding": "gzip, deflate, br",
+    "Connection": "keep-alive",
+    "Upgrade-Insecure-Requests": "1",
+    "Sec-Fetch-Dest": "document",
+    "Sec-Fetch-Mode": "navigate",
+    "Sec-Fetch-Site": "none",
+    "Sec-Fetch-User": "?1",
+}
 
 def _ctx():
     try:
@@ -151,13 +168,13 @@ def main():
     a = ap.parse_args()
 
     if a.url:
-        os.makedirs(f"corpus/{a.name}", exist_ok=True)
+        os.makedirs(CORPUS_DIR / a.name, exist_ok=True)
         raw = http_get(a.url, timeout=20)
         text = html_to_text(raw)[:25000]
         m = re.search(r"<title[^>]*>(.*?)</title>", raw, re.S | re.I)
         title = html.unescape(m.group(1)).strip() if m else a.url
         host = urllib.parse.urlparse(a.url).netloc.replace(".", "_")
-        fn = f"corpus/{a.name}/{a.id}-{host}.txt"
+        fn = CORPUS_DIR / a.name / f"{a.id}-{host}.txt"
         with open(fn, "w") as f:
             f.write(f"URL: {a.url}\nTITLE: {title}\nFETCHED: {time.strftime('%Y-%m-%d %H:%M:%S')}\n\n{text}\n")
         print(f"saved -> {fn} ({len(text)} chars)")
@@ -187,7 +204,7 @@ def main():
         print(f"[{i}] ({e}) {t}\n    {u}\n    {s[:160]}\n")
 
     if a.fetch:
-        os.makedirs(f"corpus/{a.name}", exist_ok=True)
+        os.makedirs(CORPUS_DIR / a.name, exist_ok=True)
         done = 0
         for e, t, u, s in uniq[: a.fetch * 3]:  # try more, skip heavy domains
             if done >= a.fetch: break
@@ -197,14 +214,14 @@ def main():
             try:
                 raw = http_get(u, timeout=15)
                 text = html_to_text(raw)[:20000]
-                fn = f"corpus/{a.name}/{done+1:02d}-{host.replace('.', '_')}.txt"
+                fn = CORPUS_DIR / a.name / f"{done+1:02d}-{host.replace('.', '_')}.txt"
                 with open(fn, "w") as f:
                     f.write(f"URL: {u}\nTITLE: {t}\nSOURCE: {u}\nFETCHED: {time.strftime('%Y-%m-%d %H:%M:%S')}\n\n{text}\n")
                 print(f"saved -> {fn} ({len(text)} chars)")
                 done += 1
             except Exception as ex:
                 print(f"fetch fail: {u} ({ex})", file=sys.stderr)
-        print(f"\nfetched {done} pages into corpus/{a.name}/")
+        print(f"\nfetched {done} pages into {CORPUS_DIR / a.name}/")
 
 if __name__ == "__main__":
     main()
