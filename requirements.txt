@@ -1,0 +1,8 @@
+# Noorak Search CLI — Python dependencies
+# Basic usage requires only Python 3.10+ stdlib (json, os, ssl, subprocess, sys, time, urllib).
+# No pip packages are required for the core functionality.
+#
+# Optional extras (if you want to extend the project):
+# requests>=2.31    # alternative HTTP client (not currently used)
+# aiohttp           # async HTTP support (if you add async mode)
+# pytest            # for running the test suite

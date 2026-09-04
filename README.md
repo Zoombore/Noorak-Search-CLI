@@ -1,125 +1,118 @@
 # Noorak Search CLI
 
-A command-line tool that lets **Gemma-4-31B-IT** (or any tool-capable model via FreeTheAI) perform **deep research** by itself: it decides what to search, fetches pages, and writes a final Markdown report — all via tool-calling loops.
-            (default model: kai/openrouter/free, override via NOORAK_MODEL_FTAI)
+A command-line tool that lets any tool-capable AI model perform deep research by itself:
+it decides what to search, fetches pages, and writes a final Markdown report via tool-calling loops.
 
-## Features
+## Overview
 
-- Three research depth modes:
-  - **Light bobble** – ~4 tool calls (quick baseline).
-  - **Light caster** – ~8 tool calls (two-phase deeper dive).
-  - **RayCaster** – ~16 tool calls (four-phase extensive study).
-- Model drives the search: uses `web_search` to discover sources, `fetch_page` to read them, and finally `save_research` to write the report.
-- You only nudge the model with helpful user messages when it pauses; no hard forcing of tool calls (respects model's own reasoning time).
-- Provider flexibility:
-  - **SelfLab / ArvanCloud** (default) – uses `Gemma-4-31B-IT`.
-  - **FreeTheAI** – set `NOORAK_PROVIDER=freetheai` and optionally `NOORAK_MODEL_FTAI`.
-            (default model: kai/openrouter/free, override via NOORAK_MODEL_FTAI)
-- Budget control via `NOORAK_MAX_TOOLCALLS` (overrides mode's internal tool-call limit).
-- Outputs timestamped Markdown files under `./output/`.
+Noorak is a research agent CLI. You pick a research mode, enter a query, and the model
+uses three built-in tools (`web_search`, `fetch_page`, `save_research`) to conduct the
+research autonomously. The model decides when to call each tool — we only enforce a
+tool-call budget and nudge it with user messages when needed.
 
-## Setup
+## Provider compatibility
 
-1. Clone this repo (or copy the files).
-2. Ensure you have provider credentials:
+The CLI works with **any OpenAI-compatible endpoint**, **Anthropic**, or **Google Gemini**.
+At first run you are asked which type of endpoint you are using, and the CLI adapts its
+request format accordingly:
 
-   - For **SelfLab** (default): the CLI expects the same files as your SelfLab setup:
-     ```
-     /workspace/selflab/gemma4/.provider_key
-     /workspace/selflab/gemma4/.provider_base
-     ```
-   - For **FreeTheAI**: create two files in the CLI directory:
-            (default model: kai/openrouter/free, override via NOORAK_MODEL_FTAI)
-     ```
-     .ftai_key    # your FreeTheAI API key (starts with sta_...)
-            (default model: kai/openrouter/free, override via NOORAK_MODEL_FTAI)
-     .ftai_base   # https://api.freetheai.xyz/v1
-     ```
-     (They are automatically `.gitignore`d.)
+- **OpenAI-compatible** (`/chat/completions`) — default, works with any provider that
+  follows the OpenAI API shape.
+- **Anthropic** (`/v1/messages`) — adapts messages and headers for Anthropic's format.
+- **Google Gemini** (`/v1beta/models/{model}:generateContent`) — uses Gemini's
+  generateContent endpoint.
 
-3. (Optional) Python 3.8+ is required; no external packages needed (stdlib only).
-
-## Usage
-
-Run the CLI:
+### Quick start
 
 ```bash
 python3 noorak_search.py
+# Follow the interactive prompts for endpoint type, base URL, API key, and model name.
 ```
 
-You’ll see a menu:
+### Non-interactive mode
 
-```
-=== Noorak Search CLI ===
- 1) Light bobble - Baseline deep research (same as earlier).
- 2) Light caster - First, output a concise research plan (2-3 bullet points). Then, execute the plan in two phases: each phase should gather sources and write a substantive chunk (~100k tokens worth of content). Finally, combine the two chunks into one cohesive report, explain why the chosen sources are reliable, and end with a short summary asking if the user is satisfied. Aim for a total output size around 200k tokens.
- 3) RayCaster - First, output a detailed research plan with 4 clear parts. Then, execute each part as a separate phase, gathering sources and writing deep chunks. Combine all four parts into one extensive report, explain source reliability, and conclude with a summary asking if the user is satisfied. Aim for a total output size around 500k tokens.
-Select mode [1-3]:
-```
+Set environment variables to skip the prompt:
 
-Pick a mode, then enter your research query.
+| Variable | Description |
+|----------|-------------|
+| `NOORAK_API_KEY` | Your API key |
+| `NOORAK_BASE_URL` | Base URL of the endpoint (e.g. `https://api.example.com/v1`) |
+| `NOORAK_MODEL` | Model ID to use |
+| `NOORAK_API_TYPE` | `openai` (default), `anthropic`, or `gemini` |
 
-After the search finishes, you’ll be offered to:
-- Run another search
-- View the last report (first few lines)
-- Exit
+If all three of `NOORAK_API_KEY`, `NOORAK_BASE_URL`, and `NOORAK_MODEL` are set,
+the CLI skips the prompt and uses them directly.
 
-## Environment Variables
+## Research modes
 
-| Variable | Description | Default |
-|----------|-------------|---------|
-| `NOORAK_PROVIDER` | `"selflab"` (default) or `"freetheai"` | `selflab` |
-| `NOORAK_MODEL_FTAI` | Model ID to use with FreeTheAI (ignored for SelfLab) | `kai/nvidia/nemotron-3-ultra-550b-a55b:free` |
-            (default model: kai/openrouter/free, override via NOORAK_MODEL_FTAI)
-| `NOORAK_MAX_TOOLCALLS` | Override the mode’s tool‑call budget (integer) | mode’s internal value |
-| `NOORAK_MAX_ITERS` | **Deprecated** – use `NOORAK_MAX_TOOLCALLS` instead (kept for backward compatibility) | ignored |
+Pick one of three depth modes when starting a search:
 
-Example: run a Light bobble search but allow at most 6 tool calls:
+1. **Light bobble** — baseline deep research (~4 tool calls).
+2. **Light caster** — two-phase plan, each phase gathers sources and writes a chunk
+   (~100k tokens worth), then combined (~8 tool calls).
+3. **RayCaster** — four-phase plan, each phase gathers sources and writes a deep chunk,
+   then combined (~16 tool calls).
+
+Override the tool-call budget with `NOORAK_MAX_TOOLCALLS` (integer).
+
+## Usage
 
 ```bash
-NOORAK_MAX_TOOLCALLS=6 python3 noorak_search.py
+cd /path/to/Noorak-Search-CLI
+python3 noorak_search.py
 ```
 
-## How It Works
+1. Select a mode (1‑3).
+2. Enter your research query.
+3. When research finishes, choose:
+   - 1) New search
+   - 2) View last report (first 30 lines)
+   - 3) Exit
 
-1. You select a mode → each mode has a **tool‑call budget** (Light bobble: 4, Light caster: 8, RayCaster: 16).
-2. The CLI calls the model with a system prompt that explains the tools and the budget.
-3. The model **freely decides** when to call `web_search` or `fetch_page` (tool_choice="auto").
-4. After each model response:
-   - If it called tools → we execute them, increment the counter, and return the results.
-   - If it gave a final answer (no tool calls):
-        - If budget not exhausted → we nudge: “Continue researching, you still have X tool calls left.”
-        - If budget exhausted → we ask it to finalize by calling `save_research`.
-5. When the model finally calls `save_research`, we write the Markdown to `output/research_<timestamp>.md`.
-6. As a last resort, if the model never calls `save_research` after the budget, we save its last text as the report (so you always get something).
+Reports are saved as timestamped Markdown files under `./output/`.
 
-## Example Output
+## Using Noorak as a plugin / extension
 
-The final Markdown includes:
-- Executive Summary
-- Answers to your specific sub‑questions (if any)
-- Architecture diagrams (Mermaid) when relevant
-- Implementation roadmap
-- Technology decision matrix
-- Risks & mitigations
-- Recommended next steps
-- Appendix: Sources (all URLs the model actually fetched)
+Noorak can be used as a **plug-in component** inside other software projects that need
+built-in AI research capabilities. Import the core functions and integrate them into
+your own pipeline:
 
-## Notes
+```python
+from noorak_search import researcher_loop, chat, exec_tool, TOOLS
 
-- The first search can take a while because the model performs several rounds of reasoning and tool use. Subsequent searches on similar topics may be faster if the model reuses knowledge.
-- If the provider (ArvanCloud or FreeTheAI) is slow or rate‑limited, the CLI will appear to hang; it is waiting for the HTTP response. Adjust your timeout or try again later.
-            (default model: kai/openrouter/free, override via NOORAK_MODEL_FTAI)
-- All API keys stay **only in memory**; they are never written to logs.
+# Run a research task with a custom system prompt
+result_path = researcher_loop(
+    query="What is the latest in AI model routing?",
+    system_extra="Focus on open-source solutions.",
+    max_tool_calls=8
+)
+```
 
-## Troubleshooting
+Key functions available for plug-in use:
 
-- **Provider credentials missing** → double‑check the paths `.provider_key`/`.provider_base` (SelfLab) or `.ftai_key`/`.ftai_base` (FreeTheAI).
-            (default model: kai/openrouter/free, override via NOORAK_MODEL_FTAI)
-- **Model refuses to call tools** → increase the budget via `NOORAK_MAX_TOOLCALLS` or check that the model listed actually supports tool‑calling (we verified `kai/nvidia/nemotron-3-ultra-550b-a55b:free` works).
-- **No output file** → in the extremely unlikely case the model returns nothing, the CLI will still attempt to save its last utterance.
+- `chat(messages, tool_choice, max_tokens)` — send a message to the configured provider.
+- `exec_tool(name, args)` — execute a built-in tool by name.
+- `researcher_loop(query, system_extra, max_tool_calls)` — run the full research pipeline.
+- `TOOLS` — the list of available tool definitions (for passing to the model).
+
+All provider configuration is read at import time from environment variables or the
+interactive prompt, so your project can configure it before importing.
+
+## Requirements
+
+- Python 3.10+ (stdlib only — no pip dependencies needed for basic usage)
+- Internet access (for `web_search` and `fetch_page` tools)
+- A valid API key for your chosen provider/endpoint
+
+See `requirements.txt` and `SECURITY.md` for additional details.
+
+## Security
+
+- API keys are **never** written to disk or committed to version control.
+- Credentials stay in memory only.
+- Use environment variables for CI/CD or automated workflows to avoid interactive input.
+- See `SECURITY.md` for full security guidance.
 
 ## License
 
-MIT – feel free to fork and adapt.
-
+MIT License — see `LICENSE` file.
