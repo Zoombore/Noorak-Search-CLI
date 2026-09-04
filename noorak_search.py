@@ -225,6 +225,19 @@ TOOLS = [
         "name":"save_research",
         "description":"Write the COMPLETE final research document (Markdown) to disk. Call exactly once at the end.",
         "parameters":{"type":"object","properties":{"markdown":{"type":"string"}},"required":["markdown"]}}},
+    {"type":"function","function":{
+        "name":"pdna",
+        "description":"NoorPDNA — Three-Dimensional Identity Manifold Engine. Compute psychological state values on a 3D sphere.",
+        "parameters":{"type":"object","properties":{
+            "action":{"type":"string","description":"base|changer|iterate|sphere|summary",
+                "enum":["base","changer","iterate","sphere","summary"]},
+            "y":{"type":"number","description":"Identity & Expression axis value [-1, +1]", "minimum":-1, "maximum":1},
+            "z":{"type":"number","description":"Sensory Processing axis value [-1, +1]", "minimum":-1, "maximum":1},
+            "x":{"type":"number","description":"Executive Control axis value [-1, +1]", "minimum":-1, "maximum":1},
+            "n":{"type":"integer","description":"Multiplier (for iterate)", "minimum":1, "default":5},
+            "resolution":{"type":"integer","description":"Sphere sampling resolution", "minimum":3, "maximum":10, "default":5},
+            "states":{"type":"array","description":"Array of state dicts (for summary)"}
+        },"required":["action"]}}},
 ]
 
 # ---------- Local search engine (stdlib only) ----------
@@ -253,7 +266,35 @@ def exec_tool(name, args):
         fname = out_dir / f"research_{ts}.md"
         open(fname,"w",encoding="utf-8").write(md)
         return f"SAVED:{fname}"
+    if name == "pdna":
+        return _pdna_tool(args)
     return "unknown tool"
+
+# ---------- NoorPDNA tool integration ----------
+def _pdna_tool(args: dict) -> str:
+    """Handle pdna tool calls from the model. Lazy import."""
+    import noor_pdna
+    action = args.get("action", "base")
+    if action == "base":
+        y = args.get("y", 0); z = args.get("z", 0); x = args.get("x", 0)
+        return json.dumps({"action": "base", "result": noor_pdna.pdna_base(y, z, x)})
+    elif action == "changer":
+        y = args.get("y", 0); z = args.get("z", 0); x = args.get("x", 0)
+        results = noor_pdna.pdna_changer(y, z, x)
+        return json.dumps({"action": "changer", "results": results})
+    elif action == "iterate":
+        y = args.get("y", 0); z = args.get("z", 0); x = args.get("x", 0)
+        n = args.get("n", 5)
+        results = noor_pdna.pdna_iterate(y, z, x, n)
+        return json.dumps({"action": "iterate", "results": results})
+    elif action == "sphere":
+        resolution = args.get("resolution", 5)
+        results = noor_pdna.pdna_sphere_sample(resolution)
+        return json.dumps({"action": "sphere", "results": results})
+    elif action == "summary":
+        states = args.get("states", [])
+        return json.dumps({"action": "summary", "result": noor_pdna.pdna_summary(states)})
+    return json.dumps({"error": f"unknown pdna action: {action}"})
 
 # ---------- Research loop ----------
 def researcher_loop(query, system_extra="", max_tool_calls=4):

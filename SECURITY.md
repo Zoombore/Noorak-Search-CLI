@@ -37,6 +37,10 @@ output/
 .ftai_key
 .ftai_base
 .env
+*.swp
+*.swo
+*.log
+.DS_Store
 ```
 
 ## TLS / certificate handling
