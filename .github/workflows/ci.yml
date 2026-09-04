@@ -2,44 +2,9 @@ name: Noorak CI
 
 on:
   push:
-    branches: [main, master]
+    branches: [main]
 
 jobs:
-  test:
-    runs-on: ubuntu-latest
-    strategy:
-      matrix:
-        python-version: ["3.11"]
-
-    steps:
-      - uses: actions/checkout@v4
-
-      - uses: actions/setup-python@v5
-        with:
-          python-version: ${{ matrix.python-version }}
-
-      - name: Syntax check
-        run: |
-          python -m py_compile engine/noorak_search.py
-          python -m py_compile engine/token_optimizer.py
-          python -m py_compile engine/injection_guard.py
-          python -m py_compile engine/local_search.py
-          python -m py_compile lfe/deepsearch.py
-          python -m py_compile lfe/noor_pdna.py
-          echo "Syntax OK"
-
-      - name: Import check
-        run: |
-          python -c "import sys; sys.path.insert(0, 'engine'); import noorak_search; print('engine OK')"
-          python -c "import sys; sys.path.insert(0, 'lfe'); import deepsearch; print('deepsearch OK')"
-          python -c "import sys; sys.path.insert(0, 'lfe'); import noor_pdna; print('noor_pdna OK')"
-
-      - name: PDNA tests
-        run: python lfe/test_noor_pdna.py
-
-      - name: Engine tests
-        run: python tests/test_engine.py
-
   lint:
     runs-on: ubuntu-latest
     steps:
@@ -47,6 +12,19 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: "3.11"
+      - run: pip install flake8
+      - run: flake8 engine/ lfe/ --max-line-length=200 --ignore=E501,W503,E303,E261,E722 --exclude=__pycache__
+
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - run: python lfe/test_noor_pdna.py
+      - run: python tests/test_engine.py
       - run: |
-          pip install flake8
-          flake8 engine/ lfe/ --max-line-length=120 --ignore=E501,E303,E261,E722,W503 --exclude=__pycache__
+          python -c "import sys; sys.path.insert(0,'engine'); import noorak_search; print('OK')"
+          python -c "import sys; sys.path.insert(0,'lfe'); import deepsearch; print('OK')"
+          python -c "import sys; sys.path.insert(0,'lfe'); import noor_pdna; print('OK')"
