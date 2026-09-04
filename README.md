@@ -5,6 +5,36 @@ it decides what to search, fetches pages, and writes a final Markdown report via
 
 The **NoorPDNA** (Psychological-Domain Navigation Architecture) engine controls the search narrowing process — like a 3D sphere collapsing toward a precise target.
 
+## Project Structure
+
+```
+Noorak-Search-CLI/          # Repository root
+├── engine/                 # Orchestrator layer
+│   ├── __init__.py
+│   └── noorak_search.py    # Main CLI engine: chat, cache, EvidenceLog, save ladder
+├── lfe/                    # Light Finder Engine (computation)
+│   ├── __init__.py
+│   ├── deepsearch.py       # Web search engines (Bing, Ddg, Gh, Arxiv) + fetch
+│   ├── noor_pdna.py        # PDNA mathematical engine
+│   └── test_noor_pdna.py   # Unit tests for PDNA
+├── cache/                  # TTL cache (JSON files, auto-generated)
+├── storage/corpus/         # Raw downloaded pages
+├── output/                 # Final Markdown reports (auto-saved)
+├── docs/                   # Documentation
+│   ├── ARCHITECTURE.md
+│   ├── HOW_IT_WORKS.md
+│   └── TUTORIAL.md
+├── tests/                  # Test scripts
+├── .gitignore
+├── README.md
+├── SECURITY.md
+├── LICENSE
+├── setup.py                # pip installable
+├── pyproject.toml          # Build configuration
+├── Dockerfile              # Container image
+└── requirements.txt        # Dependencies
+```
+
 ## Overview
 
 Noorak is a research agent CLI. You pick a research mode, enter a query, and the model
@@ -50,7 +80,8 @@ request format accordingly:
 ### Quick start
 
 ```bash
-python3 noorak_search.py
+cd /path/to/Noorak-Search-CLI
+python3 engine/noorak_search.py
 # Follow the interactive prompts for endpoint type, base URL, API key, and model name.
 ```
 
@@ -64,8 +95,10 @@ Set environment variables to skip the prompt:
 | `NOORAK_BASE_URL` | Base URL of the endpoint (e.g. `https://api.example.com/v1`) |
 | `NOORAK_MODEL` | Model ID to use |
 | `NOORAK_API_TYPE` | `openai` (default), `anthropic`, or `gemini` |
+| `NOORAK_CACHE_TTL` | Cache TTL in hours (default 24, set 0 to disable) |
+| `NOORAK_MAX_TOOLCALLS` | Max tool calls per query (default 999) |
 
-If all three of `NOORAK_API_KEY`, `NOORAK_BASE_URL`, and `NOORAK_MODEL` are set,
+If all of `NOORAK_API_KEY`, `NOORAK_BASE_URL`, and `NOORAK_MODEL` are set,
 the CLI skips the prompt and uses them directly.
 
 ## Research modes
@@ -80,11 +113,36 @@ Pick one of three depth modes when starting a search:
 
 Override the tool-call budget with `NOORAK_MAX_TOOLCALLS` (integer).
 
+## Installation
+
+### From source (recommended)
+
+```bash
+git clone https://github.com/Zoombore/Noorak-Search-CLI.git
+cd Noorak-Search-CLI
+python3 engine/noorak_search.py
+```
+
+### pip install
+
+```bash
+pip install .
+# Then use from anywhere:
+noorak "What is the price of Tether?"
+```
+
+### Docker
+
+```bash
+docker build -t noorak .
+docker run -e NOORAK_API_KEY=... -e NOORAK_BASE_URL=... -e NOORAK_MODEL=... noorak
+```
+
 ## Usage
 
 ```bash
 cd /path/to/Noorak-Search-CLI
-python3 noorak_search.py
+python3 engine/noorak_search.py
 ```
 
 1. Select a mode (1‑3).
@@ -96,6 +154,25 @@ python3 noorak_search.py
 
 Reports are saved as timestamped Markdown files under `./output/`.
 
+### As a Python library
+
+```python
+from engine.noorak_search import researcher_loop, chat, exec_tool, TOOLS, noor_pdna
+
+result_path = researcher_loop(
+    query="What is the latest in AI model routing?",
+    system_extra="Focus on open-source solutions.",
+    max_tool_calls=8
+)
+print(f"Report saved to: {result_path}")
+```
+
+### As a module
+
+```bash
+python3 -m noorak "What is Tether price?"
+```
+
 ## Using Noorak as a plugin / extension
 
 Noorak can be used as a **plug-in component** inside other software projects that need
@@ -103,7 +180,7 @@ built-in AI research capabilities. Import the core functions and integrate them 
 your own pipeline:
 
 ```python
-from noorak_search import researcher_loop, chat, exec_tool, TOOLS, noor_pdna
+from engine.noorak_search import researcher_loop, chat, exec_tool, TOOLS, noor_pdna
 
 # Run a research task with a custom system prompt
 result_path = researcher_loop(
@@ -137,10 +214,13 @@ interactive prompt, so your project can configure it before importing.
 
 | File | Description |
 |------|-------------|
-| `noorak_search.py` | Main CLI engine |
-| `noor_pdna.py` | PDNA mathematical engine |
-| `deepsearch.py` | Local search tool (stdlib) |
-| `README.md` | This file |
+| `engine/noorak_search.py` | Main CLI engine |
+| `lfe/noor_pdna.py` | PDNA mathematical engine |
+| `lfe/deepsearch.py` | Local search tool (stdlib) |
+| `lfe/test_noor_pdna.py` | PDNA unit tests |
+| `docs/ARCHITECTURE.md` | Full architecture guide |
+| `docs/HOW_IT_WORKS.md` | How Noorak works step-by-step |
+| `docs/TUTORIAL.md` | Quick start tutorial |
 | `SECURITY.md` | Security guide |
 | `requirements.txt` | Dependencies |
 | `.gitignore` | Git ignore rules |

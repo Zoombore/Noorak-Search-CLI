@@ -86,37 +86,20 @@ def cache_set(kind: str, key: str, value) -> None:
     except Exception:
         pass
 
-# ---------- Provider selection (interactive) ----------
-def select_provider():
-    """Ask the user for base URL, API key, model, and API type.
-    Returns (api_key, base_url, model, api_type)."""
-    print("\n=== Provider Setup ===")
-    print("Supported endpoint types:")
-    print("  1) OpenAI-compatible (default) — any endpoint following /chat/completions")
-    print("  2) Anthropic — uses /v1/messages endpoint")
-    print("  3) Google Gemini — uses /v1beta/models/{model}:generateContent")
-    while True:
-        choice = input("Select endpoint type [1-3]: ").strip()
-        if choice in ("1", "2", "3"):
-            break
-        print("Invalid choice.")
-    api_type = {"1": "openai", "2": "anthropic", "3": "gemini"}[choice]
-    base_url = input("Enter base URL (e.g. https://api.example.com/v1): ").strip()
-    api_key = input("Enter API key: ").strip()
-    model = input("Enter model name: ").strip()
-    return api_key, base_url, model, api_type
+# ---------- Provider configuration ----------
+# Deferred: resolved on first chat() call or when main() runs.
+# Environment vars override interactive prompt.
+_API_KEY = os.environ.get("NOORAK_API_KEY")
+_BASE_URL = os.environ.get("NOORAK_BASE_URL")
+_MODEL = os.environ.get("NOORAK_MODEL")
+_API_TYPE = os.environ.get("NOORAK_API_TYPE", "openai")
 
-# Allow env-based non-interactive override
-if (os.environ.get("NOORAK_API_KEY") and os.environ.get("NOORAK_BASE_URL")
-        and os.environ.get("NOORAK_MODEL")):
-    API_KEY = os.environ["NOORAK_API_KEY"]
-    BASE_URL = os.environ["NOORAK_BASE_URL"]
-    MODEL = os.environ["NOORAK_MODEL"]
-    # Default to openai-compatible if not specified
-    API_TYPE = os.environ.get("NOORAK_API_TYPE", "openai")
+if _API_KEY and _BASE_URL and _MODEL:
+    API_KEY, BASE_URL, MODEL, API_TYPE = _API_KEY, _BASE_URL, _MODEL, _API_TYPE
     print(f"[Noorak] Using provider from environment: {MODEL} ({API_TYPE}) @ {BASE_URL}")
 else:
-    API_KEY, BASE_URL, MODEL, API_TYPE = select_provider()
+    API_KEY = BASE_URL = MODEL = API_TYPE = None
+    print("[Noorak] Provider not configured yet. Will prompt on first use.")
 
 # ---------- API helpers ----------
 def _openai_headers():
@@ -133,6 +116,7 @@ def _gemini_headers():
 
 def chat(messages, tool_choice="auto", max_tokens=2500):
     """Send a message to the configured provider and return the model's reply."""
+    _ensure_provider()
     if API_TYPE == "openai":
         return _chat_openai(messages, tool_choice, max_tokens)
     elif API_TYPE == "anthropic":
@@ -547,6 +531,7 @@ def pick_mode():
         print('Invalid choice.')
 
 def main():
+    _ensure_provider()
     while True:
         mode = pick_mode()
         cfg = MODES[mode]

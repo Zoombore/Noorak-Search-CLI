@@ -1,0 +1,39 @@
+[build-system]
+requires = ["setuptools>=61.0", "wheel"]
+build-backend = "setuptools.backends._legacy:_Backend"
+
+[project]
+name = "noorak-search-cli"
+version = "2.0.0"
+description = "Autonomous deep research CLI — any tool-capable AI model can search, fetch, and write reports via tool-calling loops."
+readme = "README.md"
+requires-python = ">=3.10"
+license = {text = "MIT"}
+authors = [
+    {name = "Zoombore", email = "zoombore@users.noreply.github.com"}
+]
+classifiers = [
+    "Development Status :: 4 - Beta",
+    "Intended Audience :: Developers",
+    "License :: OSI Approved :: MIT License",
+    "Operating System :: OS Independent",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Topic :: Scientific/Engineering :: Artificial Intelligence",
+    "Topic :: Software Development :: Libraries :: Python Modules",
+    "Topic :: Internet :: WWW/HTTP",
+]
+dependencies = []  # Python stdlib only
+
+[project.scripts]
+noorak = "engine.noorak_search:main"
+
+[project.urls]
+Homepage = "https://github.com/Zoombore/Noorak-Search-CLI"
+Repository = "https://github.com/Zoombore/Noorak-Search-CLI.git"
+Issues = "https://github.com/Zoombore/Noorak-Search-CLI/issues"
+
+[tool.setuptools.packages.find]
+include = ["engine", "engine.*", "lfe", "lfe.*"]

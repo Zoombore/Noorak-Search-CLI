@@ -8,3 +8,4 @@ output/
 *.swo
 *.log
 .DS_Store
+cache/test_*.json
