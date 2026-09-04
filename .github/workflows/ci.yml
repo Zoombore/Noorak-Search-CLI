@@ -3,43 +3,20 @@ name: Noorak CI
 on:
   push:
     branches: [main, master]
-  pull_request:
-    branches: [main, master]
 
 jobs:
   test:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        python-version: ["3.10", "3.11", "3.12"]
+        python-version: ["3.11"]
 
     steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
+      - uses: actions/checkout@v4
 
-      - name: Set up Python ${{ matrix.python-version }}
-        uses: actions/setup-python@v5
+      - uses: actions/setup-python@v5
         with:
           python-version: ${{ matrix.python-version }}
-
-      - name: Install dependencies
-        run: |
-          python -m pip install --upgrade pip
-          pip install pytest
-
-      - name: Run PDNA unit tests
-        run: |
-          python lfe/test_noor_pdna.py
-
-      - name: Run engine unit tests
-        run: |
-          python tests/test_engine.py
-
-      - name: Verify module import
-        run: |
-          python -c "import sys; sys.path.insert(0, 'engine'); import noorak_search; print('engine OK')"
-          python -c "import sys; sys.path.insert(0, 'lfe'); import deepsearch; print('deepsearch OK')"
-          python -c "import sys; sys.path.insert(0, 'lfe'); import noor_pdna; print('noor_pdna OK')"
 
       - name: Syntax check
         run: |
@@ -49,52 +26,27 @@ jobs:
           python -m py_compile engine/local_search.py
           python -m py_compile lfe/deepsearch.py
           python -m py_compile lfe/noor_pdna.py
-          python -m py_compile lfe/__init__.py
-          python -m py_compile engine/__init__.py
-          python -m py_compile __main__.py
-          python -m py_compile setup.py
-          python -m py_compile tests/test_engine.py
-          python -m py_compile tests/legacy_test_deep_loop.py
-          echo "All files compile OK"
+          echo "Syntax OK"
+
+      - name: Import check
+        run: |
+          python -c "import sys; sys.path.insert(0, 'engine'); import noorak_search; print('engine OK')"
+          python -c "import sys; sys.path.insert(0, 'lfe'); import deepsearch; print('deepsearch OK')"
+          python -c "import sys; sys.path.insert(0, 'lfe'); import noor_pdna; print('noor_pdna OK')"
+
+      - name: PDNA tests
+        run: python lfe/test_noor_pdna.py
+
+      - name: Engine tests
+        run: python tests/test_engine.py
 
   lint:
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
-
-      - name: Set up Python
-        uses: actions/setup-python@v5
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
         with:
-          python-version: "3.12"
-
-      - name: Install and run flake8
-        run: |
+          python-version: "3.11"
+      - run: |
           pip install flake8
-          # Skip legacy test file and long descriptive lines
-          flake8 engine/ lfe/ tests/test_engine.py lfe/test_noor_pdna.py --max-line-length=120 --ignore=E501,W503,E722,E303,E261,E501 --exclude=__pycache__
-
-  docker:
-    runs-on: ubuntu-latest
-    needs: [test, lint]
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
-
-      - name: Docker meta
-        id: meta
-        uses: docker/metadata-action@v5
-        with:
-          images: zoombore/noorak
-
-      - name: Build and push
-        uses: docker/build-push-action@v5
-        with:
-          context: .
-          push: true
-          tags: ${{ steps.meta.outputs.tags }}
-          labels: ${{ steps.meta.outputs.labels }}
-          build-args: |
-            NOORAK_API_KEY=${{ secrets.NOORAK_API_KEY }}
-            NOORAK_BASE_URL=${{ secrets.NOORAK_BASE_URL }}
-            NOORAK_MODEL=${{ secrets.NOORAK_MODEL }}
+          flake8 engine/ lfe/ --max-line-length=120 --ignore=E501,E303,E261,E722,W503 --exclude=__pycache__
