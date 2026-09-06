@@ -1,4 +1,4 @@
-# Noorak Search CLI (NoorPDNA)
+# Noorak Search CLI
 
 A command-line tool that lets any tool-capable AI model perform deep research by itself:
 it decides what to search, fetches pages, and writes a final Markdown report via tool-calling loops.
