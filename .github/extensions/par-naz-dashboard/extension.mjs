@@ -11,7 +11,7 @@
 import { createServer } from "node:http";
 import { joinSession, createCanvas } from "@github/copilot-sdk/extension";
 import { execSync } from "node:child_process";
-import { readFileSync, existsSync, statSync } from "node:fs";
+import { readFileSync, existsSync, statSync, readdirSync } from "node:fs";
 import { join, dirname } from "node:path";
 import { fileURLToPath } from "node:url";
 
@@ -23,6 +23,211 @@ const REPO_ROOT = join(__dirname, "..", "..", "..");
 // don't collide. Replace this with your real renderer — point a static-file
 // server, a Vite/Next dev server, or any framework you like at the same URL.
 const servers = new Map();
+
+// Session tracking state
+const sessionTracker = new Map();
+const transcriptBuffer = [];
+const pipelineState = {
+    planner: { status: "idle", lastAction: null, timestamp: null },
+    classifier: { status: "idle", lastAction: null, timestamp: null },
+    embedder: { status: "idle", lastAction: null, timestamp: null },
+    validator: { status: "idle", lastAction: null, timestamp: null },
+    corrector: { status: "idle", lastAction: null, timestamp: null },
+    executionMap: { status: "idle", lastAction: null, timestamp: null }
+};
+const a2aAgents = new Map();
+const correctionLog = [];
+
+// Track connected clients for SSE
+const sseClients = new Set();
+
+// Target session to track
+const TARGET_SESSION_ID = "b42fc536-c615-4626-bc7c-c61b9b82fa3e";
+
+// Poll interval for session status (ms)
+const POLL_INTERVAL = 5000;
+let pollTimer = null;
+
+// Start polling the target session
+function startSessionPolling() {
+    if (pollTimer) return;
+    
+    pollTimer = setInterval(async () => {
+        try {
+            await pollSessionStatus();
+        } catch (e) {
+            console.error("Session polling error:", e.message);
+        }
+    }, POLL_INTERVAL);
+    
+    // Initial poll
+    pollSessionStatus();
+}
+
+async function pollSessionStatus() {
+    try {
+        // Use gh CLI to get session status
+        const { execSync } = await import("node:child_process");
+        const result = execSync(`gh api /user/copilot/sessions --jq '.[] | select(.id=="${TARGET_SESSION_ID}")'`, { 
+            encoding: "utf-8",
+            timeout: 5000 
+        }).trim();
+        
+        if (result) {
+            const session = JSON.parse(result);
+            updateSessionTracker(session);
+            broadcastSSE({ type: "session_update", data: session });
+        }
+    } catch (e) {
+        // Session might not be accessible via API, try alternative
+        try {
+            const result = execSync(`gh api /user/copilot/sessions/${TARGET_SESSION_ID}`, { 
+                encoding: "utf-8",
+                timeout: 5000 
+            }).trim();
+            const session = JSON.parse(result);
+            updateSessionTracker(session);
+            broadcastSSE({ type: "session_update", data: session });
+        } catch (e2) {
+            // Silently fail - session might not be accessible
+        }
+    }
+}
+
+function updateSessionTracker(session) {
+    const prev = sessionTracker.get(TARGET_SESSION_ID);
+    sessionTracker.set(TARGET_SESSION_ID, {
+        ...session,
+        lastPolled: new Date().toISOString(),
+        previousStatus: prev?.status
+    });
+    
+    // Track status changes
+    if (prev && prev.status !== session.status) {
+        addTranscript({
+            type: "status_change",
+            from: prev.status,
+            to: session.status,
+            timestamp: new Date().toISOString()
+        });
+    }
+}
+
+function addTranscript(entry) {
+    transcriptBuffer.push(entry);
+    if (transcriptBuffer.length > 500) transcriptBuffer.shift();
+    broadcastSSE({ type: "transcript", data: entry });
+}
+
+function updatePipelineStage(stage, status, action) {
+    if (pipelineState[stage]) {
+        pipelineState[stage] = {
+            status,
+            lastAction: action,
+            timestamp: new Date().toISOString()
+        };
+        broadcastSSE({ type: "pipeline_update", data: { stage, ...pipelineState[stage] } });
+    }
+}
+
+function addA2AAgent(agentId, data) {
+    a2aAgents.set(agentId, { ...data, lastSeen: new Date().toISOString() });
+    broadcastSSE({ type: "a2a_update", data: { agentId, ...a2aAgents.get(agentId) } });
+}
+
+function addCorrectionLog(entry) {
+    correctionLog.push({ ...entry, timestamp: new Date().toISOString() });
+    if (correctionLog.length > 200) correctionLog.shift();
+    broadcastSSE({ type: "correction_log", data: entry });
+}
+
+function broadcastSSE(message) {
+    const data = `data: ${JSON.stringify(message)}\n\n`;
+    for (const client of sseClients) {
+        try {
+            client.write(data);
+        } catch (e) {
+            sseClients.delete(client);
+        }
+    }
+}
+
+// SSE endpoint handler
+function handleSSE(req, res) {
+    res.writeHead(200, {
+        "Content-Type": "text/event-stream",
+        "Cache-Control": "no-cache",
+        "Connection": "keep-alive",
+        "Access-Control-Allow-Origin": "*"
+    });
+    
+    res.write(`data: ${JSON.stringify({ type: "connected", timestamp: new Date().toISOString() })}\n\n`);
+    
+    sseClients.add(res);
+    
+    req.on("close", () => {
+        sseClients.delete(res);
+    });
+}
+
+// API endpoint for session data
+function handleSessionAPI(req, res) {
+    const session = sessionTracker.get(TARGET_SESSION_ID) || { status: "unknown" };
+    res.writeHead(200, { "Content-Type": "application/json" });
+    res.end(JSON.stringify({
+        session,
+        pipeline: pipelineState,
+        a2aAgents: Object.fromEntries(a2aAgents),
+        correctionLog: correctionLog.slice(-50),
+        transcript: transcriptBuffer.slice(-100)
+    }));
+}
+
+// Simulate pipeline activity for demo (replace with real hooks later)
+function simulatePipelineActivity() {
+    const stages = Object.keys(pipelineState);
+    const actions = [
+        "Planning search strategy",
+        "Classifying user intent with Laya",
+        "Generating embeddings",
+        "Validating against schema",
+        "Self-correction analysis",
+        "Writing execution map"
+    ];
+    
+    setInterval(() => {
+        const stage = stages[Math.floor(Math.random() * stages.length)];
+        const action = actions[Math.floor(Math.random() * actions.length)];
+        const statuses = ["idle", "running", "completed", "error"];
+        const status = statuses[Math.floor(Math.random() * statuses.length)];
+        updatePipelineStage(stage, status, action);
+    }, 8000);
+    
+    // Simulate A2A agents
+    for (let i = 1; i <= 24; i++) {
+        setTimeout(() => {
+            addA2AAgent(`agent-${i}`, {
+                id: `agent-${i}`,
+                role: ["verifier", "validator", "critic", "planner"][i % 4],
+                status: ["idle", "running", "completed"][Math.floor(Math.random() * 3)],
+                task: `Verification task ${i}`
+            });
+        }, i * 200);
+    }
+    
+    // Simulate correction log entries
+    setInterval(() => {
+        if (Math.random() > 0.7) {
+            addCorrectionLog({
+                stage: stages[Math.floor(Math.random() * stages.length)],
+                issue: "Validation mismatch detected",
+                analysis: "Classifier confidence below threshold",
+                nextStep: "Request user clarification on intent",
+                userPrompt: "Did you mean X or Y?"
+            });
+        }
+    }, 15000);
+}
 
 function getGitStatus() {
     try {
